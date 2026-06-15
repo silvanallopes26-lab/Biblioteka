@@ -1,0 +1,51 @@
+package Biblioteka.controller;
+
+import java.util.List;
+
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import Biblioteka.entity.Livro;
+import Biblioteka.service.LivroService;
+
+@RestController
+@RequestMapping("/livros")
+@CrossOrigin(origins = "http://localhost:5173")
+public class LivroController {
+
+    private final LivroService service;
+
+    public LivroController(LivroService service) {
+        this.service = service;
+    }
+
+    @PostMapping
+    public Livro salvar(@RequestBody Livro livro) {
+        return service.salvar(livro);
+    }
+
+    @GetMapping
+    public List<Livro> listar() {
+        return service.listar();
+    }
+
+    @PutMapping("/{id}")
+    public Livro atualizar(
+            @PathVariable Long id,
+            @RequestBody Livro livro) {
+
+        return service.atualizar(id, livro);
+    }
+
+    @DeleteMapping("/{id}")
+    public void excluir(@PathVariable Long id) {
+        service.excluir(id);
+    }
+}

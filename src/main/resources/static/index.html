@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biblioteka</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+    h1 { color: #2f4f4f; }
+    a { color: #1a73e8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .card { padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; max-width: 600px; }
+    .form-row { margin-bottom: 16px; }
+    .form-row label { display: block; margin-bottom: 6px; font-weight: bold; }
+    .form-row input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .button { background: #1a73e8; color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; }
+    .button:hover { background: #1666c1; }
+    .message { margin-top: 16px; padding: 12px; border-radius: 6px; display: none; }
+    .message.success { background: #e6f4ea; color: #1b5e20; border: 1px solid #c8e6c9; }
+    .message.error { background: #fbe9e7; color: #b71c1c; border: 1px solid #ffcdd2; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Biblioteka</h1>
+    <p>O servidor está rodando corretamente.</p>
+    <p>Use a API REST abaixo:</p>
+    <ul>
+      <li><a href="/livros">GET /livros</a> - Listar livros</li>
+      <li>POST /livros - Criar livro</li>
+    </ul>
+    <p>Use o formulário abaixo para cadastrar um livro:</p>
+
+    <form id="livroForm">
+      <div class="form-row">
+        <label for="titulo">Título</label>
+        <input id="titulo" name="titulo" type="text" required placeholder="Nome do livro" />
+      </div>
+      <div class="form-row">
+        <label for="autor">Autor</label>
+        <input id="autor" name="autor" type="text" required placeholder="Nome do autor" />
+      </div>
+      <div class="form-row">
+        <label for="preco">Preço</label>
+        <input id="preco" name="preco" type="number" step="0.01" required placeholder="49.90" />
+      </div>
+      <button type="submit" class="button">Cadastrar livro</button>
+    </form>
+
+    <div id="message" class="message"></div>
+
+    <div style="margin-top:20px">
+      <h2>Lista de livros</h2>
+      <button id="refreshBtn" class="button" style="margin-bottom:12px">Atualizar lista</button>
+      <div id="livrosList">Carregando...</div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('livroForm');
+    const message = document.getElementById('message');
+    const livrosList = document.getElementById('livrosList');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    async function fetchLivros() {
+      livrosList.textContent = 'Carregando...';
+      try {
+        const res = await fetch('/livros');
+        if (!res.ok) throw new Error('Falha ao buscar livros');
+        const list = await res.json();
+        if (!Array.isArray(list) || list.length === 0) {
+          livrosList.innerHTML = '<i>Nenhum livro encontrado.</i>';
+          return;
+        }
+        const html = list.map(l => `
+          <div style="padding:8px;border-bottom:1px solid #eee">
+            <strong>${escapeHtml(l.titulo?.nome || '')}</strong>
+            <div>Autor: ${escapeHtml(l.autor?.nome || '')}</div>
+            <div>Preço: R$ ${l.preco?.valor ?? ''}</div>
+          </div>
+        `).join('');
+        livrosList.innerHTML = html;
+      } catch (err) {
+        livrosList.innerHTML = `<div class="message error">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      message.style.display = 'none';
+      const titulo = document.getElementById('titulo').value.trim();
+      const autor = document.getElementById('autor').value.trim();
+      const preco = document.getElementById('preco').value;
+
+      const payload = {
+        titulo: { nome: titulo },
+        autor: { nome: autor },
+        preco: { valor: parseFloat(preco) }
+      };
+
+      try {
+        const response = await fetch('/livros', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || 'Erro ao cadastrar livro.');
+        }
+        const data = await response.json();
+        message.textContent = `Livro cadastrado: ${data.titulo.nome} por ${data.autor.nome}`;
+        message.className = 'message success';
+        message.style.display = 'block';
+        form.reset();
+        fetchLivros();
+      } catch (error) {
+        message.textContent = error.message;
+        message.className = 'message error';
+        message.style.display = 'block';
+      }
+    });
+
+    refreshBtn.addEventListener('click', (e) => { e.preventDefault(); fetchLivros(); });
+
+    // initial load
+    fetchLivros();
+  </script>
+</body>
+</html>
