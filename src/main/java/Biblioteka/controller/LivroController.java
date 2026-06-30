@@ -17,7 +17,7 @@ import Biblioteka.service.LivroService;
 
 @RestController
 @RequestMapping("/livros")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class LivroController {
 
     private final LivroService service;
